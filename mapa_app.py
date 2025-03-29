@@ -83,17 +83,14 @@ for _, row in filtered.iterrows():
     slika_path = os.path.join(static_folder, slika_file)
 
     if os.path.exists(slika_path):
-    with open(slika_path, "rb") as image_file:
-        encoded = base64.b64encode(image_file.read()).decode("utf-8")
-    img_tag = f"""
-    <div style="margin-bottom:8px">
-        <img src="data:image/jpg;base64,{encoded}" width="200px"
-             style="border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
-    </div>
-    """
-	else:
-    img_tag = "<div style='color:gray'>[Nema slike]</div>"
-
+        img_tag = f"""
+        <div style="margin-bottom:8px">
+            <img src="data:image/jpg;base64,{open(slika_path, 'rb').read().encode('base64').decode()}" width="200px"
+                 style="border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
+        </div>
+        """
+    else:
+        img_tag = "<div style='color:gray'>[Nema slike]</div>"
 
     popup_html = f"""
     <div style="font-family:sans-serif; font-size:13px; line-height:1.5">
@@ -144,3 +141,14 @@ st.download_button("⬇️ Preuzmi CSV trenutnog prikaza", filtered.to_csv(index
 st.markdown("---")
 st.markdown("📩 **Ako ste videli neki grafit, nalepnicu, mural ili poster** možete poslati detalje na **mejl@mejl.rs**")
 
+if os.path.exists(slika_path):
+    with open(slika_path, "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode("utf-8")
+    img_tag = f"""
+    <div style="margin-bottom:8px">
+        <img src="data:image/jpg;base64,{encoded}" width="200px"
+             style="border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
+    </div>
+    """
+else:
+    img_tag = "<div style='color:gray'>[Nema slike]</div>"
