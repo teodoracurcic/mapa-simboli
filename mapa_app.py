@@ -26,7 +26,6 @@ def parse_datum(raw):
     except:
         return "Nepoznat datum"
 
-# 🧠 Keširaj podatke
 @st.cache_data
 def ucitaj_podatke():
     df = pd.read_excel(xlsx_path)
@@ -43,8 +42,6 @@ tip_ikonica = {'G': 'spray-can', 'M': 'paint-brush', 'N': 'sticky-note', 'P': 'f
 
 # 🧭 Layout
 st.set_page_config(page_title="Mapa simbola", layout="wide")
-
-# Naslov i opis (manji)
 st.markdown("<h3 style='margin-bottom:0'>🗺 Desničarski simboli širom Beograda</h3>", unsafe_allow_html=True)
 st.caption("Fotografije sa ulica nastale u periodu od 2019. do marta 2025. godine")
 
@@ -74,7 +71,6 @@ if autori:
 
 st.markdown(f"🔎 <small><b>Pronađeno simbola: {len(filtered)}</b></small>", unsafe_allow_html=True)
 
-# Prikaz mape samo ako ima podataka
 if not filtered.empty:
 
     m = folium.Map(tiles="CartoDB positron", zoom_start=13, location=[44.8, 20.45])
@@ -87,42 +83,27 @@ if not filtered.empty:
         autor = row['Autor']
         tekst = row.get('Tekst 1', '')
         datum = row.get('Datum_fmt', '')
-        slika_file = f"{row['Slika']}.jpg"
-        slika_path = os.path.join(static_folder, slika_file)
-
-        if os.path.exists(slika_path):
-            try:
-                with open(slika_path, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read()).decode()
-                img_tag = f"""
-                <div style="margin-bottom:8px">
-                    <img src="data:image/jpeg;base64,{encoded_string}" width="200px"
-                         style="border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
-                </div>
-                """
-            except:
-                img_tag = "<div style='color:gray'>[Greška pri učitavanju slike]</div>"
-        else:
-            img_tag = "<div style='color:gray'>[Nema slike]</div>"
+        slika_id = row['Slika']
 
         popup_html = f"""
         <div style="font-family:sans-serif; font-size:13px; line-height:1.5">
-            {img_tag}
-            <div><b>🖍 Tip:</b> {tip_naziv.get(tip, tip)}</div>
-            <div><b>✍ Tekst:</b> {tekst}</div>
-            <div><b>🧑 Autor:</b> {autor}</div>
-            <div><b>📷 Slikano:</b> {datum}</div>
+            <b>🖍 Tip:</b> {tip_naziv.get(tip, tip)}<br>
+            <b>✍ Tekst:</b> {tekst}<br>
+            <b>🧑 Autor:</b> {autor}<br>
+            <b>📷 Slikano:</b> {datum}
         </div>
         """
 
-        folium.Marker(
+        marker = folium.Marker(
             location=[lat, lon],
             popup=folium.Popup(popup_html, max_width=300),
             tooltip=tekst,
             icon=folium.Icon(color=tip_boja.get(tip, 'black'),
                              icon=tip_ikonica.get(tip, 'info-sign'),
                              prefix="fa")
-        ).add_to(marker_cluster)
+        )
+        marker.add_to(marker_cluster)
+        marker._name = slika_id  # koristimo ga za identifikaciju
 
         bounds.append([lat, lon])
 
@@ -143,12 +124,27 @@ if not filtered.empty:
     """
     m.get_root().html.add_child(folium.Element(legend_html))
 
-    st_folium(m, width=None, height=700)
+    # Prikaz mape
+    st_map = st_folium(m, width=None, height=700)
+
+    # 📸 Prikaz slike ako je kliknuto na marker
+    if st_map and st_map.get("last_object_clicked_tooltip"):
+        kliknuti_tekst = st_map["last_object_clicked_tooltip"]
+        red = filtered[filtered["Tekst 1"] == kliknuti_tekst].iloc[0]
+        slika_file = f"{red['Slika']}.jpg"
+        slika_path = os.path.join(static_folder, slika_file)
+
+        st.markdown("---")
+        st.subheader("📷 Slika")
+        if os.path.exists(slika_path):
+            st.image(slika_path, use_column_width=True)
+        else:
+            st.warning("⚠️ Slika nije pronađena.")
 
 else:
     st.info("⛔ Nema rezultata za zadate filtere.")
 
-# 📥 CSV ispod mape
+# 📥 CSV
 st.divider()
 st.download_button("⬇️ Preuzmi CSV trenutnog prikaza", filtered.to_csv(index=False), "simboli_filtrirani.csv")
 
