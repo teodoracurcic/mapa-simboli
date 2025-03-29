@@ -5,61 +5,67 @@ from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 import os
 
-# --- 📁 Putanje ---
+# 📁 Putanje
 xlsx_path = "simboli_koordinate_GPS.xlsx"
 static_folder = "static"
 
-# --- 📥 Učitaj podatke ---
+# 📥 Učitaj podatke
 df = pd.read_excel(xlsx_path)
 df = df[df['lat'].notna() & df['lon'].notna()]
 
-# 📅 Formatiranje datuma
+# 📅 Datum u čitljiv format
 meseci_srpski = {
     1: 'januar', 2: 'februar', 3: 'mart', 4: 'april', 5: 'maj', 6: 'jun',
     7: 'jul', 8: 'avgust', 9: 'septembar', 10: 'oktobar', 11: 'novembar', 12: 'decembar'
 }
-
 def parse_datum(raw):
     try:
         raw_str = str(int(raw)).zfill(5)
         month = int(raw_str[0])
         day = int(raw_str[1:3])
         year = 2000 + int(raw_str[3:])
-        naziv_meseca = meseci_srpski.get(month, "nepoznato")
-        return f"{day}. {naziv_meseca} {year}."
+        return f"{day}. {meseci_srpski.get(month, 'nepoznato')} {year}."
     except:
         return "Nepoznat datum"
 
-df['Datum_fmt'] = df['Datum'].apply(parse_datum)
+df["Datum_fmt"] = df["Datum"].apply(parse_datum)
 
-# 🎨 Stilovi
+# 🌈 Stilovi
 tip_naziv = {'G': 'Grafit', 'M': 'Mural', 'N': 'Nalepnica', 'P': 'Poster'}
 tip_boja = {'G': 'gray', 'M': 'blue', 'N': 'orange', 'P': 'red'}
 tip_ikonica = {'G': 'spray-can', 'M': 'paint-brush', 'N': 'sticky-note', 'P': 'file-image'}
 
-# 🧠 Naslov
+# 🧭 Layout
+st.set_page_config(page_title="Mapa simbola", layout="wide")
 st.title("🗺 Desničarski simboli širom Beograda")
-st.markdown("*Fotografije sa ulica nastale u periodu od 2019. do marta 2025. godine*")
+st.caption("Fotografije sa ulica nastale u periodu od 2019. do marta 2025. godine")
 
-# 🎛 Filteri
-col1, col2 = st.columns(2)
+# 🔘 Filteri (sakriveni)
+with st.expander("🎛 Prikaži / sakrij filtere"):
+    col1, col2 = st.columns(2)
+    with col1:
+        tipovi = st.multiselect("🎨 Tip", sorted(df['Tip'].dropna().unique()), default=[])
+        velicine = st.multiselect("📏 Veličina", sorted(df['Relativna velicina?'].dropna().unique()), default=[])
+    with col2:
+        kvaliteti = st.multiselect("📸 Kvalitet", sorted(df['Kvalitet'].dropna().unique()), default=[])
+        autori = st.multiselect("✍ Autor", sorted(df['Autor'].dropna().unique()), default=[])
 
-with col1:
-    tipovi = st.multiselect("🎨 Tip", sorted(df['Tip'].dropna().unique()), default=list(df['Tip'].dropna().unique()))
-    velicine = st.multiselect("📏 Veličina", sorted(df['Relativna velicina?'].dropna().unique()), default=list(df['Relativna velicina?'].dropna().unique()))
+if st.button("🔄 Resetuj filtere"):
+    st.experimental_rerun()
 
-with col2:
-    kvaliteti = st.multiselect("📸 Kvalitet", sorted(df['Kvalitet'].dropna().unique()), default=list(df['Kvalitet'].dropna().unique()))
-    autori = st.multiselect("✍ Autor", sorted(df['Autor'].dropna().unique()), default=list(df['Autor'].dropna().unique()))
+# 🔍 Filtriranje
+filtered = df.copy()
+if tipovi:
+    filtered = filtered[filtered['Tip'].isin(tipovi)]
+if velicine:
+    filtered = filtered[filtered['Relativna velicina?'].isin(velicine)]
+if kvaliteti:
+    filtered = filtered[filtered['Kvalitet'].isin(kvaliteti)]
+if autori:
+    filtered = filtered[filtered['Autor'].isin(autori)]
 
-# 🔎 Filtriranje
-filtered = df[
-    df['Tip'].isin(tipovi) &
-    df['Relativna velicina?'].isin(velicine) &
-    df['Kvalitet'].isin(kvaliteti) &
-    df['Autor'].isin(autori)
-]
-
+st.markdown(f"🔎 **Pronađeno simbola: {len(filtered)}**")
+st.download_button("⬇️ Preuzmi CSV trenutnog prikaza", filtered.to_csv(index=False), "simboli_filtrirani.csv")
 # 🗺 Mapa
 m = folium.Map(tiles="CartoDB positron", zoom_start=13, location=[44.8, 20.45])
 marker_cluster = MarkerCluster().add_to(m)
@@ -95,18 +101,29 @@ for _, row in filtered.iterrows():
         location=[lat, lon],
         popup=folium.Popup(popup_html, max_width=300),
         tooltip=tekst,
-        icon=folium.Icon(color=tip_boja.get(tip, 'black'), icon=tip_ikonica.get(tip, 'info-sign'), prefix="fa")
+        icon=folium.Icon(color=tip_boja.get(tip, 'black'),
+                         icon=tip_ikonica.get(tip, 'info-sign'),
+                         prefix="fa")
     ).add_to(marker_cluster)
 
     bounds.append([lat, lon])
 
-# Fit mapa na prikazane tačke
 if bounds:
     m.fit_bounds(bounds)
 
-# Prikaz mape
-st_data = st_folium(m, width=1000, height=600)
+# 🧭 Legenda
+legend_html = """
+<div style='position: fixed; bottom: 20px; right: 20px; background: white; padding: 10px;
+            border-radius: 8px; border:1px solid #ccc; font-size: 13px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1); z-index: 9999;'>
+<b>Legenda</b><br>
+<div><span style='background:gray; width:12px; height:12px; display:inline-block; margin-right:5px'></span>Grafit</div>
+<div><span style='background:blue; width:12px; height:12px; display:inline-block; margin-right:5px'></span>Mural</div>
+<div><span style='background:orange; width:12px; height:12px; display:inline-block; margin-right:5px'></span>Nalepnica</div>
+<div><span style='background:red; width:12px; height:12px; display:inline-block; margin-right:5px'></span>Poster</div>
+</div>
+"""
+m.get_root().html.add_child(folium.Element(legend_html))
 
-# Napomena
-st.markdown("---")
-st.info("📬 Ako znate za neki simbol koji nedostaje, javite se na adresu: **primer@gmail.com**")
+# 📍 Prikaz mape
+st_data = st_folium(m, width=1000, height=600)
