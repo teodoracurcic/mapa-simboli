@@ -37,18 +37,20 @@ tip_ikonica = {'G': 'spray-can', 'M': 'paint-brush', 'N': 'sticky-note', 'P': 'f
 
 # 🧭 Layout
 st.set_page_config(page_title="Mapa simbola", layout="wide")
-st.title("🗺 Desničarski simboli širom Beograda")
+
+# Naslov sa smanjenim fontom
+st.markdown("<h3 style='margin-bottom:0'>🗺 Desničarski simboli širom Beograda</h3>", unsafe_allow_html=True)
 st.caption("Fotografije sa ulica nastale u periodu od 2019. do marta 2025. godine")
 
 # 🔘 Filteri (sakriveni)
 with st.expander("🎛 Prikaži / sakrij filtere"):
     col1, col2 = st.columns(2)
     with col1:
-        tipovi = st.multiselect("🎨 Tip", sorted(df['Tip'].dropna().unique()), default=[])
-        velicine = st.multiselect("📏 Veličina", sorted(df['Relativna velicina?'].dropna().unique()), default=[])
+        tipovi = st.multiselect("🎨 Tip", sorted(df['Tip'].dropna().unique()), default=[], placeholder="izberi")
+        velicine = st.multiselect("📏 Veličina", sorted(df['Relativna velicina?'].dropna().unique()), default=[], placeholder="izberi")
     with col2:
-        kvaliteti = st.multiselect("📸 Kvalitet", sorted(df['Kvalitet'].dropna().unique()), default=[])
-        autori = st.multiselect("✍ Autor", sorted(df['Autor'].dropna().unique()), default=[])
+        kvaliteti = st.multiselect("📸 Kvalitet", sorted(df['Kvalitet'].dropna().unique()), default=[], placeholder="izberi")
+        autori = st.multiselect("✍ Autor", sorted(df['Autor'].dropna().unique()), default=[], placeholder="izberi")
 
 if st.button("🔄 Resetuj filtere"):
     st.experimental_rerun()
@@ -64,8 +66,8 @@ if kvaliteti:
 if autori:
     filtered = filtered[filtered['Autor'].isin(autori)]
 
-st.markdown(f"🔎 **Pronađeno simbola: {len(filtered)}**")
-st.download_button("⬇️ Preuzmi CSV trenutnog prikaza", filtered.to_csv(index=False), "simboli_filtrirani.csv")
+st.markdown(f"🔎 <small><b>Pronađeno simbola: {len(filtered)}</b></small>", unsafe_allow_html=True)
+
 # 🗺 Mapa
 m = folium.Map(tiles="CartoDB positron", zoom_start=13, location=[44.8, 20.45])
 marker_cluster = MarkerCluster().add_to(m)
@@ -78,14 +80,17 @@ for _, row in filtered.iterrows():
     tekst = row.get('Tekst 1', '')
     datum = row.get('Datum_fmt', '')
     slika_file = f"{row['Slika']}.jpg"
-    slika_url = f"https://mapa-simboli.streamlit.app/static/{slika_file}"
+    slika_path = os.path.join(static_folder, slika_file)
 
-    img_tag = f"""
-    <div style="margin-bottom:8px">
-        <img src="{slika_url}" width="200px"
-             style="border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
-    </div>
-    """
+    if os.path.exists(slika_path):
+        img_tag = f"""
+        <div style="margin-bottom:8px">
+            <img src="data:image/jpg;base64,{open(slika_path, 'rb').read().encode('base64').decode()}" width="200px"
+                 style="border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
+        </div>
+        """
+    else:
+        img_tag = "<div style='color:gray'>[Nema slike]</div>"
 
     popup_html = f"""
     <div style="font-family:sans-serif; font-size:13px; line-height:1.5">
@@ -125,5 +130,14 @@ legend_html = """
 """
 m.get_root().html.add_child(folium.Element(legend_html))
 
-# 📍 Prikaz mape
-st_data = st_folium(m, width=1000, height=600)
+# 📍 Prikaz mape fullscreen
+st_folium(m, width=None, height=700)
+
+# ⬇️ CSV dugme dole
+st.divider()
+st.download_button("⬇️ Preuzmi CSV trenutnog prikaza", filtered.to_csv(index=False), "simboli_filtrirani.csv")
+
+# 📬 Informacije za prijavu
+st.markdown("---")
+st.markdown("📩 **Ako ste videli neki grafit, nalepnicu, mural ili poster** možete poslati detalje na **mejl@mejl.rs**")
+
