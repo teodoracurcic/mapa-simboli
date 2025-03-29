@@ -4,6 +4,7 @@ import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 import os
+import base64
 
 # 📁 Putanje
 xlsx_path = "simboli_koordinate_GPS.xlsx"
@@ -83,9 +84,11 @@ for _, row in filtered.iterrows():
     slika_path = os.path.join(static_folder, slika_file)
 
     if os.path.exists(slika_path):
+        with open(slika_path, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode()
         img_tag = f"""
         <div style="margin-bottom:8px">
-            <img src="data:image/jpg;base64,{open(slika_path, 'rb').read().encode('base64').decode()}" width="200px"
+            <img src="data:image/jpeg;base64,{encoded_string}" width="200px"
                  style="border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
         </div>
         """
@@ -140,15 +143,3 @@ st.download_button("⬇️ Preuzmi CSV trenutnog prikaza", filtered.to_csv(index
 # 📬 Informacije za prijavu
 st.markdown("---")
 st.markdown("📩 **Ako ste videli neki grafit, nalepnicu, mural ili poster** možete poslati detalje na **mejl@mejl.rs**")
-
-if os.path.exists(slika_path):
-    with open(slika_path, "rb") as image_file:
-        encoded = base64.b64encode(image_file.read()).decode("utf-8")
-    img_tag = f"""
-    <div style="margin-bottom:8px">
-        <img src="data:image/jpg;base64,{encoded}" width="200px"
-             style="border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
-    </div>
-    """
-else:
-    img_tag = "<div style='color:gray'>[Nema slike]</div>"
