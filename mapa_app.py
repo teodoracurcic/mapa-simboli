@@ -4,13 +4,13 @@ import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 
-# ⚠️ Ovo mora biti prva Streamlit komanda
+# ⚠️ OVO MORA BITI PRVO!
 st.set_page_config(page_title="Mapa simbola", layout="wide")
 
 # 📁 Putanja do fajla sa podacima
 xlsx_path = "simboli_koordinate_GPS.xlsx"
 
-# 📅 Pretvaranje datuma u čitljiv format
+# 📅 Datum u čitljiv format
 meseci_srpski = {
     1: 'januar', 2: 'februar', 3: 'mart', 4: 'april', 5: 'maj', 6: 'jun',
     7: 'jul', 8: 'avgust', 9: 'septembar', 10: 'oktobar', 11: 'novembar', 12: 'decembar'
@@ -135,10 +135,10 @@ if not filtered.empty:
 else:
     st.info("⛔ Nema rezultata za zadate filtere.")
 
-# 📥 Dugme za preuzimanje CSV
+# 📥 CSV za preuzimanje
 st.divider()
 st.download_button("⬇️ Preuzmi CSV trenutnog prikaza", filtered.to_csv(index=False), "simboli_filtrirani.csv")
 
-# 📬 Prijava informacija
+# 📬 Prijava simbola
 st.markdown("---")
 st.markdown("📩 **Ako ste videli neki grafit, nalepnicu, mural ili poster** možete poslati detalje na **mejl@mejl.rs**")
