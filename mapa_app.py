@@ -4,7 +4,7 @@ import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 
-# ⚠️ Ovo mora biti prva Streamlit komanda
+# ⚠️ Ovo mora biti PRVA Streamlit komanda
 st.set_page_config(page_title="Mapa simbola", layout="wide")
 
 # 📁 Putanja do fajla sa podacima
@@ -40,7 +40,7 @@ tip_naziv = {'G': 'Grafit', 'M': 'Mural', 'N': 'Nalepnica', 'P': 'Poster'}
 tip_boja = {'G': 'gray', 'M': 'blue', 'N': 'orange', 'P': 'red'}
 tip_ikonica = {'G': 'spray-can', 'M': 'paint-brush', 'N': 'sticky-note', 'P': 'file-image'}
 
-# 🧭 Naslov aplikacije
+# 🧭 Naslov
 st.markdown("<h3 style='margin-bottom:0'>🗺 Desničarski simboli širom Beograda</h3>", unsafe_allow_html=True)
 st.caption("Fotografije sa ulica nastale u periodu od 2019. do marta 2025. godine")
 
@@ -57,7 +57,7 @@ with st.expander("🎛 Prikaži / sakrij filtere", expanded=True):
 if st.button("🔄 Resetuj filtere"):
     st.experimental_rerun()
 
-# 🔍 Filtriranje podataka
+# 🔍 Filtriranje
 filtered = df.copy()
 if tipovi:
     filtered = filtered[filtered['Tip'].isin(tipovi)]
@@ -135,10 +135,10 @@ if not filtered.empty:
 else:
     st.info("⛔ Nema rezultata za zadate filtere.")
 
-# 📥 Dugme za preuzimanje CSV
+# 📥 CSV za preuzimanje
 st.divider()
 st.download_button("⬇️ Preuzmi CSV trenutnog prikaza", filtered.to_csv(index=False), "simboli_filtrirani.csv")
 
-# 📬 Prijava informacija
+# 📬 Prijava
 st.markdown("---")
 st.markdown("📩 **Ako ste videli neki grafit, nalepnicu, mural ili poster** možete poslati detalje na **mejl@mejl.rs**")
