@@ -73,7 +73,7 @@ st.markdown(f"🔎 <small><b>Pronađeno simbola: {len(filtered)}</b></small>", u
 # 🗺 Kreiranje mape
 if not filtered.empty:
     m = folium.Map(tiles="CartoDB positron", zoom_start=13, location=[44.8, 20.45])
-    marker_cluster = MarkerCluster().add_to(m)
+    marker_cluster = MarkerCluster(spiderfyOnMaxZoom=True, zoomToBoundsOnClick=True).add_to(m)
     bounds = []
 
     for _, row in filtered.iterrows():
