@@ -4,6 +4,9 @@ import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 
+# ⚠️ Ovo mora biti prva Streamlit komanda
+st.set_page_config(page_title="Mapa simbola", layout="wide")
+
 # 📁 Putanja do fajla sa podacima
 xlsx_path = "simboli_koordinate_GPS.xlsx"
 
@@ -37,8 +40,7 @@ tip_naziv = {'G': 'Grafit', 'M': 'Mural', 'N': 'Nalepnica', 'P': 'Poster'}
 tip_boja = {'G': 'gray', 'M': 'blue', 'N': 'orange', 'P': 'red'}
 tip_ikonica = {'G': 'spray-can', 'M': 'paint-brush', 'N': 'sticky-note', 'P': 'file-image'}
 
-# 🧭 Podešavanje Streamlit strane
-st.set_page_config(page_title="Mapa simbola", layout="wide")
+# 🧭 Naslov aplikacije
 st.markdown("<h3 style='margin-bottom:0'>🗺 Desničarski simboli širom Beograda</h3>", unsafe_allow_html=True)
 st.caption("Fotografije sa ulica nastale u periodu od 2019. do marta 2025. godine")
 
