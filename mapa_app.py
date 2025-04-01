@@ -3,14 +3,11 @@ import pandas as pd
 import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
-import os
-import base64
 
-# 📁 Putanje
+# 📁 Putanja do fajla sa podacima
 xlsx_path = "simboli_koordinate_GPS.xlsx"
-static_folder = "static"
 
-# 📅 Datum u čitljiv format
+# 📅 Pretvaranje datuma u čitljiv format
 meseci_srpski = {
     1: 'januar', 2: 'februar', 3: 'mart', 4: 'april', 5: 'maj', 6: 'jun',
     7: 'jul', 8: 'avgust', 9: 'septembar', 10: 'oktobar', 11: 'novembar', 12: 'decembar'
@@ -35,12 +32,12 @@ def ucitaj_podatke():
 
 df = ucitaj_podatke()
 
-# 🌈 Stilovi
+# 🌈 Stilovi za mapu
 tip_naziv = {'G': 'Grafit', 'M': 'Mural', 'N': 'Nalepnica', 'P': 'Poster'}
 tip_boja = {'G': 'gray', 'M': 'blue', 'N': 'orange', 'P': 'red'}
 tip_ikonica = {'G': 'spray-can', 'M': 'paint-brush', 'N': 'sticky-note', 'P': 'file-image'}
 
-# 🧭 Layout
+# 🧭 Podešavanje Streamlit strane
 st.set_page_config(page_title="Mapa simbola", layout="wide")
 st.markdown("<h3 style='margin-bottom:0'>🗺 Desničarski simboli širom Beograda</h3>", unsafe_allow_html=True)
 st.caption("Fotografije sa ulica nastale u periodu od 2019. do marta 2025. godine")
@@ -58,7 +55,7 @@ with st.expander("🎛 Prikaži / sakrij filtere", expanded=True):
 if st.button("🔄 Resetuj filtere"):
     st.experimental_rerun()
 
-# 🔍 Filtriranje
+# 🔍 Filtriranje podataka
 filtered = df.copy()
 if tipovi:
     filtered = filtered[filtered['Tip'].isin(tipovi)]
@@ -71,8 +68,8 @@ if autori:
 
 st.markdown(f"🔎 <small><b>Pronađeno simbola: {len(filtered)}</b></small>", unsafe_allow_html=True)
 
+# 🗺 Kreiranje mape
 if not filtered.empty:
-
     m = folium.Map(tiles="CartoDB positron", zoom_start=13, location=[44.8, 20.45])
     marker_cluster = MarkerCluster().add_to(m)
     bounds = []
@@ -83,27 +80,34 @@ if not filtered.empty:
         autor = row['Autor']
         tekst = row.get('Tekst 1', '')
         datum = row.get('Datum_fmt', '')
-        slika_id = row['Slika']
+        slika_file = f"{row['Slika']}.jpg"
+        slika_url = f"https://teodoracurcic-mapa-simboli.streamlit.app/static/{slika_file}"
 
-        popup_html = f"""
-        <div style="font-family:sans-serif; font-size:13px; line-height:1.5">
-            <b>🖍 Tip:</b> {tip_naziv.get(tip, tip)}<br>
-            <b>✍ Tekst:</b> {tekst}<br>
-            <b>🧑 Autor:</b> {autor}<br>
-            <b>📷 Slikano:</b> {datum}
+        img_tag = f"""
+        <div style="margin-bottom:8px">
+            <img src="{slika_url}" width="200px"
+                 style="border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.25);">
         </div>
         """
 
-        marker = folium.Marker(
+        popup_html = f"""
+        <div style="font-family:sans-serif; font-size:13px; line-height:1.5">
+            {img_tag}
+            <div><b>🖍 Tip:</b> {tip_naziv.get(tip, tip)}</div>
+            <div><b>✍ Tekst:</b> {tekst}</div>
+            <div><b>🧑 Autor:</b> {autor}</div>
+            <div><b>📷 Slikano:</b> {datum}</div>
+        </div>
+        """
+
+        folium.Marker(
             location=[lat, lon],
             popup=folium.Popup(popup_html, max_width=300),
             tooltip=tekst,
             icon=folium.Icon(color=tip_boja.get(tip, 'black'),
                              icon=tip_ikonica.get(tip, 'info-sign'),
                              prefix="fa")
-        )
-        marker.add_to(marker_cluster)
-        marker._name = slika_id  # koristimo ga za identifikaciju
+        ).add_to(marker_cluster)
 
         bounds.append([lat, lon])
 
@@ -124,30 +128,15 @@ if not filtered.empty:
     """
     m.get_root().html.add_child(folium.Element(legend_html))
 
-    # Prikaz mape
-    st_map = st_folium(m, width=None, height=700)
-
-    # 📸 Prikaz slike ako je kliknuto na marker
-    if st_map and st_map.get("last_object_clicked_tooltip"):
-        kliknuti_tekst = st_map["last_object_clicked_tooltip"]
-        red = filtered[filtered["Tekst 1"] == kliknuti_tekst].iloc[0]
-        slika_file = f"{red['Slika']}.jpg"
-        slika_path = os.path.join(static_folder, slika_file)
-
-        st.markdown("---")
-        st.subheader("📷 Slika")
-        if os.path.exists(slika_path):
-            st.image(slika_path, use_column_width=True)
-        else:
-            st.warning("⚠️ Slika nije pronađena.")
+    st_folium(m, width=None, height=700)
 
 else:
     st.info("⛔ Nema rezultata za zadate filtere.")
 
-# 📥 CSV
+# 📥 Dugme za preuzimanje CSV
 st.divider()
 st.download_button("⬇️ Preuzmi CSV trenutnog prikaza", filtered.to_csv(index=False), "simboli_filtrirani.csv")
 
-# 📬 Prijava
+# 📬 Prijava informacija
 st.markdown("---")
 st.markdown("📩 **Ako ste videli neki grafit, nalepnicu, mural ili poster** možete poslati detalje na **mejl@mejl.rs**")
